@@ -5,7 +5,7 @@ import ServiceManagement
 import SwiftUI
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate, CLLocationManagerDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, CLLocationManagerDelegate {
     let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     let locationManager = CLLocationManager()
     let notifier = Notifier()
@@ -23,6 +23,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, CLLocationManagerDeleg
     var pendingCheck: DispatchWorkItem?
     var settingsWindow: NSWindow?
     var checking = false
+    var lastCheck: Date?
     var lastFailed = false
     var state: NetState?
     /// Set when the portal rejects the password, so we don't hammer it (and risk a lockout).
@@ -104,7 +105,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, CLLocationManagerDeleg
         }
         menu.addItem(permissionItem)
         menu.addItem(.separator())
-        menu.addItem(item("Log In Now", #selector(checkNow), "r"))
+        menu.addItem(item("Refresh Status", #selector(refreshNow), "r"))
+        menu.addItem(item("Log In Now", #selector(checkNow)))
         menu.addItem(item("Log Out", #selector(logOutNow)))
         menu.addItem(.separator())
         menu.addItem(autoItem)
@@ -115,6 +117,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, CLLocationManagerDeleg
         menu.addItem(item("Report an Issue…", #selector(reportIssue)))
         menu.addItem(item("About BHU WiFi", #selector(showAbout)))
         menu.addItem(withTitle: "Quit BHU WiFi", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        menu.delegate = self
         statusItem.menu = menu
         refreshUI()
     }
@@ -149,7 +152,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, CLLocationManagerDeleg
         return false
     }
 
-    func runCheck(reason: String, manual: Bool = false) {
+    /// `refreshOnly` just re-reads the status (e.g. after logging in from a browser) and never logs in.
+    func runCheck(reason: String, manual: Bool = false, refreshOnly: Bool = false) {
         guard !checking, onCampusWiFi(manual: manual) else { return }
         checking = true
         refreshUI()
@@ -158,6 +162,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, CLLocationManagerDeleg
             let detected = await probe()
             if detected != state { log("on \(Prefs.ssid): \(detected.rawValue)") }
             state = detected
+            lastCheck = Date()
             lastCheckItem.title = "Last check: \(timeFormatter.string(from: Date()))"
 
             switch detected {
@@ -171,6 +176,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, CLLocationManagerDeleg
                 break
             case .other:
                 log("skip: captive portal is not the BHU portal, not sending credentials")
+            case .campusPortal where refreshOnly:
+                if manual { log("refresh: not logged in") }
             case .campusPortal:
                 await handlePortal(reason: reason, manual: manual)
             }
@@ -286,6 +293,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, CLLocationManagerDeleg
     }
 
     // MARK: Actions
+
+    @objc func refreshNow() { runCheck(reason: "refresh", manual: true, refreshOnly: true) }
+
+    /// Opening the menu re-checks if the status is more than 15 s old,
+    /// so a login or logout done in the browser shows up straight away.
+    func menuWillOpen(_ menu: NSMenu) {
+        if lastCheck.map({ Date().timeIntervalSince($0) > 15 }) ?? true {
+            runCheck(reason: "menu opened", refreshOnly: true)
+        }
+    }
 
     @objc func checkNow() { runCheck(reason: "manual", manual: true) }
 

@@ -13,6 +13,7 @@ No more typing your username and password every 24 hours, or every time you walk
 - **Tells you when you're not logged in**, for example when the portal rejects your password or auto login is off.
 - **Protects your account:** if the portal rejects your password, auto login pauses instead of retrying and risking a lockout. It starts again when you update your password or click **Log In Now**.
 - **Only active on BHU-WiFi.** On any other network (home, Starbucks, hotspot) it does nothing, and your password is only ever sent to the BHU login portal.
+- **Refresh Status** (⌘R) re-checks without logging in, so a login or logout done in the browser shows up right away. Opening the menu also refreshes a stale status.
 - **Log In Now** and **Log Out** buttons, **Open at Login**, and a log file for troubleshooting.
 - Works on Apple Silicon and Intel Macs running macOS 13 Ventura or later.
 
