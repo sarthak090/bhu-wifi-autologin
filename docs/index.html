@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BHU WiFi for Mac</title>
+<meta name="description" content="A free macOS menu bar app that keeps you logged in to the BHU campus Wi-Fi. No more re-entering your password every 24 hours.">
+<meta property="og:title" content="BHU WiFi for Mac">
+<meta property="og:description" content="Stay logged in to BHU-WiFi automatically. Free and open source.">
+<meta property="og:image" content="https://sarthak090.github.io/bhu-wifi-autologin/icon.png">
+<link rel="icon" href="favicon.png">
+<style>
+  :root {
+    --bg: #fbfaf8;
+    --surface: #ffffff;
+    --surface-2: #f3f0f7;
+    --text: #1d1530;
+    --muted: #625a73;
+    --border: #e6e1ee;
+    --purple: #4a2978;
+    --purple-soft: #ece5f6;
+    --orange: #e9761c;
+    --green: #2fa84f;
+    --red: #e0453a;
+    --code-bg: #1d1530;
+    --code-text: #f3eefc;
+    --shadow: 0 1px 2px rgba(29,21,48,.06), 0 8px 24px rgba(29,21,48,.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #120d1c;
+      --surface: #1b1428;
+      --surface-2: #231a33;
+      --text: #f1edf7;
+      --muted: #a89fb8;
+      --border: #2f2443;
+      --purple: #b394e8;
+      --purple-soft: #2a1f3d;
+      --orange: #f4994e;
+      --code-bg: #0b0812;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--purple); }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 20px; }
+  h1, h2, h3 { line-height: 1.2; letter-spacing: -0.02em; margin: 0; }
+  h2 { font-size: clamp(26px, 4vw, 34px); }
+  .eyebrow { color: var(--orange); font-weight: 600; font-size: 14px; letter-spacing: .04em; text-transform: uppercase; margin: 0 0 8px; }
+  section { padding: 72px 0; }
+
+  /* Nav */
+  nav { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--text); text-decoration: none; }
+  .brand img { width: 32px; height: 32px; }
+  nav .links a { color: var(--muted); text-decoration: none; margin-left: 20px; font-size: 15px; }
+  nav .links a:hover { color: var(--text); }
+
+  /* Hero */
+  .hero { display: grid; grid-template-columns: 1.05fr .95fr; gap: 48px; align-items: center; padding: 48px 0 72px; }
+  .hero > * { min-width: 0; }
+  .hero h1 { font-size: clamp(36px, 6vw, 56px); margin-bottom: 18px; }
+  .hero h1 span { color: var(--orange); }
+  .lede { font-size: 19px; color: var(--muted); margin: 0 0 28px; max-width: 34em; }
+  .install { background: var(--code-bg); color: var(--code-text); border-radius: 12px; padding: 14px 14px 14px 18px; display: flex; align-items: center; gap: 12px; box-shadow: var(--shadow); }
+  .install code { font: 13.5px/1.5 ui-monospace, "SF Mono", Menlo, monospace; overflow-x: auto; white-space: nowrap; flex: 1; min-width: 0; scrollbar-width: none; }
+  .install code::-webkit-scrollbar { display: none; }
+  .install .prompt { color: var(--orange); user-select: none; }
+  .copy { flex: none; border: 0; border-radius: 8px; padding: 8px 14px; font: 600 13px/1 inherit; font-family: inherit; background: #ffffff1f; color: var(--code-text); cursor: pointer; }
+  .copy:hover { background: #ffffff33; }
+  .hint { font-size: 14px; color: var(--muted); margin: 12px 0 24px; }
+  .buttons { display: flex; flex-wrap: wrap; gap: 12px; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 11px 18px; border-radius: 10px; font-weight: 600; font-size: 15px; text-decoration: none; border: 1px solid var(--border); color: var(--text); background: var(--surface); }
+  .btn.primary { background: var(--purple); border-color: var(--purple); color: #fff; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn.primary { color: #120d1c; } }
+  .btn:hover { filter: brightness(1.05); }
+  .meta { font-size: 13px; color: var(--muted); margin-top: 14px; }
+
+  /* Menu bar mockup */
+  .mock { position: relative; }
+  .screen { border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); border: 1px solid var(--border);
+            background: linear-gradient(135deg, #6b3fa8 0%, #3a1f63 55%, #e9761c 140%); min-height: 380px; }
+  .menubar { height: 30px; background: rgba(255,255,255,.72); backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: flex-end; gap: 16px; padding: 0 14px; font-size: 13px; color: #1d1530; white-space: nowrap; }
+  .menubar .cap { display: flex; align-items: center; gap: 3px; background: rgba(0,0,0,.12); border-radius: 5px; padding: 2px 6px; }
+  .menubar svg { width: 17px; height: 17px; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); display: inline-block; transition: background .3s; }
+  .dropdown { position: absolute; top: 36px; right: 70px; width: 268px; background: rgba(246,244,250,.94); backdrop-filter: blur(20px); color: #1d1530;
+              border-radius: 10px; padding: 5px; font-size: 13px; box-shadow: 0 10px 30px rgba(0,0,0,.3); border: 1px solid rgba(0,0,0,.08); }
+  .dropdown div { padding: 3px 10px; border-radius: 5px; display: flex; justify-content: space-between; }
+  .dropdown .dim { color: #7c7490; }
+  .dropdown .sep { height: 1px; background: rgba(0,0,0,.1); margin: 5px 8px; padding: 0; }
+  .dropdown .hl { background: #4a7cf0; color: #fff; }
+  .dropdown kbd { font: inherit; opacity: .55; }
+  .dropdown .check::before { content: "✓"; position: absolute; margin-left: -1px; }
+  .dropdown .check { padding-left: 22px; position: relative; }
+  .dropdown .check::before { left: 9px; }
+  .banner { position: absolute; left: 18px; bottom: 18px; width: 290px; display: flex; gap: 10px; align-items: flex-start; background: rgba(246,244,250,.94); backdrop-filter: blur(20px);
+            color: #1d1530; border-radius: 14px; padding: 12px; font-size: 13px; box-shadow: 0 10px 30px rgba(0,0,0,.25); line-height: 1.35; }
+  .banner img { width: 34px; height: 34px; flex: none; }
+  .banner b { display: block; }
+
+  /* Problem strip */
+  .strip { background: var(--surface-2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 40px 0; }
+  .strip .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .strip p { margin: 0; color: var(--muted); }
+  .strip strong { color: var(--text); display: block; font-size: 17px; margin-bottom: 4px; }
+
+  /* Features */
+  .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 36px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px; }
+  .card .ic { width: 40px; height: 40px; border-radius: 10px; background: var(--purple-soft); color: var(--purple); display: grid; place-items: center; font-size: 20px; margin-bottom: 14px; }
+  .card h3 { font-size: 17px; margin-bottom: 6px; }
+  .card p { margin: 0; color: var(--muted); font-size: 15px; }
+
+  /* Status legend */
+  .legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-top: 28px; }
+  .legend div { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; font-size: 15px; }
+  .legend svg { width: 20px; height: 20px; color: var(--text); flex: none; }
+  .legend .faded svg { opacity: .35; }
+
+  /* Steps */
+  .steps { counter-reset: s; display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-top: 36px; padding: 0; list-style: none; }
+  .steps li { counter-increment: s; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px; }
+  .steps li::before { content: counter(s); display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--orange); color: #fff; font-weight: 700; margin-bottom: 12px; }
+  .steps h3 { font-size: 16px; margin-bottom: 6px; }
+  .steps p { margin: 0; color: var(--muted); font-size: 14.5px; }
+
+  /* FAQ */
+  .faq { margin-top: 28px; display: grid; gap: 10px; }
+  details { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 0 18px; }
+  summary { cursor: pointer; padding: 16px 0; font-weight: 600; list-style: none; display: flex; justify-content: space-between; gap: 12px; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "+"; color: var(--muted); font-weight: 400; font-size: 20px; line-height: 1; }
+  details[open] summary::after { content: "–"; }
+  details p, details pre { margin: 0 0 16px; color: var(--muted); }
+  details pre { background: var(--code-bg); color: var(--code-text); padding: 12px 14px; border-radius: 10px; font: 12.5px/1.6 ui-monospace, Menlo, monospace; overflow-x: auto; }
+
+  footer { border-top: 1px solid var(--border); padding: 32px 0 48px; color: var(--muted); font-size: 14px; }
+  footer .row { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+
+  @media (max-width: 860px) {
+    .hero { grid-template-columns: 1fr; gap: 36px; padding-top: 24px; }
+    .features, .strip .grid { grid-template-columns: 1fr; }
+    .steps { grid-template-columns: 1fr 1fr; }
+    nav .links a:not(.gh) { display: none; }
+  }
+  @media (max-width: 520px) {
+    .wrap { padding: 0 16px; }
+    .steps { grid-template-columns: 1fr; }
+    section { padding: 56px 0; }
+    .dropdown { right: 12px; width: 240px; }
+    .banner { left: 12px; right: 12px; width: auto; }
+    .menubar .extra { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="cap" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3 1 8.5 12 14l9-4.5V16h2V8.5L12 3Zm-6.5 9.3V16c0 1.9 2.9 4 6.5 4s6.5-2.1 6.5-4v-3.7L12 15.6l-6.5-3.3Z"/></symbol>
+</svg>
+
+<div class="wrap">
+  <nav>
+    <a class="brand" href="#"><img src="icon.png" alt="">BHU WiFi</a>
+    <div class="links">
+      <a href="#features">Features</a>
+      <a href="#setup">Setup</a>
+      <a href="#faq">FAQ</a>
+      <a class="gh" href="https://github.com/sarthak090/bhu-wifi-autologin">GitHub</a>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div>
+      <p class="eyebrow">Free · Open source · For Mac</p>
+      <h1>Stay logged in to <span>BHU-WiFi</span>. Automatically.</h1>
+      <p class="lede">A tiny menu bar app that signs you in to the campus Wi-Fi in the background, so you never retype your password after the 24-hour timeout or walking back into range.</p>
+
+      <div class="install">
+        <code id="cmd"><span class="prompt">$ </span>curl -fsSL https://raw.githubusercontent.com/sarthak090/bhu-wifi-autologin/main/install.sh | bash</code>
+        <button class="copy" id="copy" type="button">Copy</button>
+      </div>
+      <p class="hint">Open <b>Terminal</b>, paste this and press Return. That's the whole install.</p>
+
+      <div class="buttons">
+        <a class="btn primary" href="https://github.com/sarthak090/bhu-wifi-autologin/releases/latest/download/BHU-WiFi.zip">Download .zip</a>
+        <a class="btn" href="https://github.com/sarthak090/bhu-wifi-autologin">View source on GitHub</a>
+      </div>
+      <p class="meta">macOS 13 Ventura or later · Apple Silicon &amp; Intel · ~500 KB</p>
+    </div>
+
+    <div class="mock" aria-hidden="true">
+      <div class="screen">
+        <div class="menubar">
+          <span class="extra">Wed 14:20</span>
+          <span class="cap"><svg><use href="#cap"/></svg><span class="dot" id="mockDot"></span></span>
+          <span class="extra">100%</span>
+        </div>
+        <div class="dropdown">
+          <div class="dim" id="mockStatus">Status: Logged in</div>
+          <div class="dim">Account: 151.123456</div>
+          <div class="dim">Last check: 2:20 PM</div>
+          <div class="sep"></div>
+          <div class="hl">Refresh Status <kbd>⌘R</kbd></div>
+          <div>Log In Now</div>
+          <div>Log Out</div>
+          <div class="sep"></div>
+          <div class="check">Log In Automatically</div>
+          <div class="check">Open at Login</div>
+          <div>Settings… <kbd>⌘,</kbd></div>
+          <div class="sep"></div>
+          <div>Quit BHU WiFi <kbd>⌘Q</kbd></div>
+        </div>
+        <div class="banner">
+          <img src="icon.png" alt="">
+          <div><b>Logged in to BHU Wi-Fi</b>Signed in as 151.123456.</div>
+        </div>
+      </div>
+    </div>
+  </header>
+</div>
+
+<div class="strip">
+  <div class="wrap grid">
+    <p><strong>Session expired again?</strong>The portal logs you out every 24 hours. The app notices within 2 minutes and signs you back in.</p>
+    <p><strong>Walked to another building?</strong>Rejoining the network, or waking your Mac, triggers an instant re-login.</p>
+    <p><strong>Login page won't open?</strong>No Safari pop-up, no UC Browser workaround. The app talks to the portal directly.</p>
+  </div>
+</div>
+
+<div class="wrap">
+  <section id="features">
+    <p class="eyebrow">Features</p>
+    <h2>Set it up once, then forget it.</h2>
+    <div class="features">
+      <div class="card"><div class="ic">⚡</div><h3>Automatic login</h3><p>On joining Wi-Fi, coming back into range, waking from sleep, and when the 24-hour session expires.</p></div>
+      <div class="card"><div class="ic">🔐</div><h3>Password in Keychain</h3><p>Enter your username and password once. They're stored in your Mac's Keychain, and you can change them anytime in Settings.</p></div>
+      <div class="card"><div class="ic">🔔</div><h3>Tells you when you're out</h3><p>Get a notification if you're not logged in or the portal rejects your password. Once per problem, never spammy.</p></div>
+      <div class="card"><div class="ic">📍</div><h3>Only on BHU-WiFi</h3><p>At home, at a café or on a hotspot it stays completely idle. Your password only ever goes to the BHU login portal.</p></div>
+      <div class="card"><div class="ic">🛡️</div><h3>Lockout protection</h3><p>If the portal rejects your password, auto-login pauses instead of hammering it, until you update the password.</p></div>
+      <div class="card"><div class="ic">🔄</div><h3>Refresh, log in, log out</h3><p>Logged in from a browser? Refresh shows it instantly. Need to sign out? One click.</p></div>
+    </div>
+
+    <div class="legend">
+      <div><svg><use href="#cap"/></svg><span class="dot"></span>Logged in</div>
+      <div><svg><use href="#cap"/></svg><span class="dot" style="background:var(--red)"></span>Not logged in</div>
+      <div><svg><use href="#cap"/></svg><span class="dot" style="background:var(--orange)"></span>Needs attention</div>
+      <div class="faded"><svg><use href="#cap"/></svg>Not on BHU-WiFi, idle</div>
+    </div>
+  </section>
+
+  <section id="setup">
+    <p class="eyebrow">Setup</p>
+    <h2>Up and running in a minute.</h2>
+    <ol class="steps">
+      <li><h3>Install</h3><p>Paste the install command above into Terminal. A 🎓 appears in your menu bar.</p></li>
+      <li><h3>Add your account</h3><p>Type your BHU Wi-Fi username and password in the Settings window and click Save.</p></li>
+      <li><h3>Allow Location</h3><p>macOS only shares the Wi-Fi <em>name</em> with apps that have Location access. Your location is never used.</p></li>
+      <li><h3>Turn on Open at Login</h3><p>In Settings, so it starts with your Mac. Done!</p></li>
+    </ol>
+    <p class="hint" style="margin-top:20px">Tip: in <b>System Settings → Wi-Fi → (i) next to BHU-WiFi</b>, set <b>Private Wi-Fi Address</b> to <b>Off</b> so the portal recognises your Mac between reconnects.</p>
+  </section>
+
+  <section id="faq">
+    <p class="eyebrow">FAQ</p>
+    <h2>Questions</h2>
+    <div class="faq">
+      <details><summary>Is my password safe?</summary>
+        <p>It's stored in your Mac's Keychain, the same place Safari keeps your passwords. The app only sends it to the BHU login portal, and only after checking that you're on BHU-WiFi <em>and</em> that the login page really is BHU's. The full source code is <a href="https://github.com/sarthak090/bhu-wifi-autologin">on GitHub</a> for anyone to check.</p></details>
+      <details><summary>Why does it ask for Location?</summary>
+        <p>Since macOS Sonoma, apps can only read the name of the Wi-Fi network you're on if they have Location access. BHU WiFi uses it purely to stay idle on every network except BHU-WiFi. It never reads or stores your location.</p></details>
+      <details><summary>macOS says it "can't verify the developer"</summary>
+        <p>The app isn't notarized by Apple (that needs a paid developer account). The install command handles this for you. If you downloaded the .zip by hand, open <b>System Settings → Privacy &amp; Security</b>, scroll down and click <b>Open Anyway</b>.</p></details>
+      <details><summary>I don't see the 🎓 icon</summary>
+        <p>On MacBooks with a notch, menu bar icons can hide behind it when the bar is full. Quit a few other menu bar apps, or hold ⌘ and drag icons around to make room.</p></details>
+      <details><summary>It asks for Keychain or Location access again after an update</summary>
+        <p>That's expected for apps that aren't signed with an Apple Developer ID. Click <b>Always Allow</b> for Keychain and allow Location again.</p></details>
+      <details><summary>How do I update or uninstall?</summary>
+        <p>To update, run the install command again. To uninstall, quit the app from the 🎓 menu and run:</p>
+        <pre>rm -rf "/Applications/BHU WiFi.app" ~/Applications/"BHU WiFi.app"
+rm -f ~/Library/Logs/bhu-wifi-login.log
+defaults delete io.github.sarthak090.bhu-wifi
+security delete-generic-password -s "BHU WiFi Login"</pre></details>
+      <details><summary>Something isn't working</summary>
+        <p>Open 🎓 → <b>Open Log</b> to see what happened, then <a href="https://github.com/sarthak090/bhu-wifi-autologin/issues">open an issue</a> with the relevant lines. Please never paste your password.</p></details>
+    </div>
+  </section>
+</div>
+
+<footer>
+  <div class="wrap row">
+    <span>Unofficial student project. Not affiliated with or endorsed by Banaras Hindu University.</span>
+    <span><a href="https://github.com/sarthak090/bhu-wifi-autologin">GitHub</a> · MIT License</span>
+  </div>
+</footer>
+
+<script>
+  const copyBtn = document.getElementById('copy');
+  copyBtn.addEventListener('click', async () => {
+    const text = document.getElementById('cmd').textContent.replace(/^\$\s*/, '');
+    try {
+      await navigator.clipboard.writeText(text);
+      copyBtn.textContent = 'Copied!';
+    } catch {
+      copyBtn.textContent = 'Select & copy';
+    }
+    setTimeout(() => (copyBtn.textContent = 'Copy'), 1800);
+  });
+
+  // Cycle the mock status dot: not logged in -> checking -> logged in.
+  const dot = document.getElementById('mockDot');
+  const status = document.getElementById('mockStatus');
+  const states = [
+    ['var(--red)', 'Status: Not logged in'],
+    ['#9a93a8', 'Status: Checking…'],
+    ['var(--green)', 'Status: Logged in'],
+  ];
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    let i = 2;
+    setInterval(() => {
+      i = (i + 1) % states.length;
+      dot.style.background = states[i][0];
+      status.textContent = states[i][1];
+    }, 2000);
+  }
+</script>
+</body>
+</html>

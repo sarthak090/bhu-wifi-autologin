@@ -1,5 +1,7 @@
 # BHU WiFi 🎓
 
+**Website:** https://sarthak090.github.io/bhu-wifi-autologin/
+
 A tiny macOS menu bar app that keeps you logged in to the **BHU campus Wi-Fi** (`BHU-WiFi`, Aruba ClearPass captive portal).
 
 No more typing your username and password every 24 hours, or every time you walk out of range and come back.
