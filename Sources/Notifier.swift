@@ -13,7 +13,7 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
     private let center = UNUserNotificationCenter.current()
     private var lastAlert: Alert?
     /// macOS refuses UserNotifications for apps without a Developer ID signature;
-    /// those builds fall back to AppleScript notifications (no click action).
+    /// those builds fall back to in-process AppleScript notifications (no click action).
     private var useAppleScript = false
     var onClick: ((Alert) -> Void)?
 
@@ -43,15 +43,16 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
 
     private func show(_ alert: Alert, title: String, body: String) {
         if useAppleScript {
-            let script = Process()
-            script.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
-            script.arguments = [
-                "-e", "on run argv",
-                "-e", "display notification (item 2 of argv) with title (item 1 of argv)\(alert.isProblem ? " sound name \"default\"" : "")",
-                "-e", "end run",
-                title, body.replacingOccurrences(of: "Click to", with: "Open the menu bar icon to"),
-            ]
-            try? script.run()
+            // Run in-process (not via osascript) so macOS shows BHU WiFi's own name and icon.
+            let quote = { (s: String) in
+                "\"" + s.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"") + "\""
+            }
+            let text = body.replacingOccurrences(of: "Click to", with: "Open the menu bar icon to")
+            let sound = alert.isProblem ? " sound name \"default\"" : ""
+            var error: NSDictionary?
+            NSAppleScript(source: "display notification \(quote(text)) with title \(quote(title))\(sound)")?
+                .executeAndReturnError(&error)
+            if let error { log("notification failed: \(error)") }
             return
         }
         let content = UNMutableNotificationContent()

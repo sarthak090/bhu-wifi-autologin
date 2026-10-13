@@ -77,7 +77,7 @@ Everything is in `Sources/`. `Portal.swift` has the network logic, and `Config.s
 - **Icon has an orange dot and says "Allow Location":** 🎓 → **Allow Location to Detect Wi-Fi Name…**, then turn on BHU WiFi.
 - **"Login rejected":** check your username and password in Settings. Auto login stays paused until you save them again.
 - **The icon is missing:** on MacBooks with a notch, menu bar icons can hide behind it. Quit a few other menu bar apps to make room.
-- **Notifications:** release builds aren't Apple-signed, so macOS shows their notifications through AppleScript (they may appear under "Script Editor"). If you don't see them, allow notifications for **Script Editor** in System Settings → Notifications. Use **Settings → Send Test Notification** to check.
+- **Notifications:** if you don't see any, allow notifications for **BHU WiFi** in System Settings → Notifications. Use **Settings → Send Test Notification** to check. Release builds aren't Apple-signed, so clicking a notification doesn't open the app; use the 🎓 menu instead.
 
 ## Uninstall
 
