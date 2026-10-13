@@ -70,6 +70,8 @@ struct SettingsView: View {
                 }
             }
             .formStyle(.grouped)
+            // A grouped Form scrolls, so it has no natural height; without this the window collapses.
+            .frame(height: 560)
 
             if let error {
                 Text(error).foregroundStyle(.red).font(.callout).padding(.horizontal)
